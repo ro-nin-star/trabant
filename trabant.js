@@ -1,691 +1,457 @@
 // ============================================================
-// Trabant Tuning Studio - Fő JavaScript logika
+// Trabant Tuning Studio - Vezérlő logika
 // ============================================================
 
-const canvas = document.getElementById('trabantCanvas');
-const ctx = canvas.getContext('2d');
-
-// --- Alapértelmezett tuning állapot ---
-const defaultState = {
-    bodyColor: '#3498db',
-    wheelColor: '#1a1a1a',
-    wheelStyle: 'standard',
-    spoiler: false,
+// --- Állapot objektum (minden beállítás itt tárolódik) ---
+const state = {
+    bodyFilter: 'none',
+    bodyColor: 'Eredeti',
+    brightness: 100,
+    saturation: 100,
+    hue: 0,
+    finish: 'normal',
     windowTint: 0,
-    exhaustStyle: 'standard',
-    stripe: false,
-    stripeColor: '#ffffff'
+    wheel: 'standard',
+    wheelSize: 1,
+    wheelFilter: 'none',
+    spoiler: false,
+    exhaust: 'standard',
+    lights: 'standard',
+    rideHeight: 0,
+    stickers: {},
+    stickerFilter: 'none',
+    background: 'assets/backgrounds/garage.jpg'
 };
 
-// Jelenlegi állapot másolata
-let state = { ...defaultState };
+// --- DOM elemek lekérése ---
+const carStage    = document.getElementById('carStage');
+const bodyLayer   = document.getElementById('bodyLayer');
+const windowLayer = document.getElementById('windowLayer');
+const spoilerLayer= document.getElementById('spoilerLayer');
+const exhaustLayer= document.getElementById('exhaustLayer');
+const lightsLayer = document.getElementById('lightsLayer');
+const wheelFL     = document.getElementById('wheelFrontLeft');
+const wheelRR     = document.getElementById('wheelRearRight');
 
 // ============================================================
-// TRABANT RAJZOLÓ FÜGGVÉNYEK
+// FILTER ÖSSZEÁLLÍTÁS
+// A CSS filter property-be fűzzük össze a beállításokat
 // ============================================================
 
 /**
- * Főfüggvény: minden újrarajzoláskor ezt hívjuk meg.
- * Törli a vásznat, majd rétegesen rajzolja ki az autó részeit.
+ * Összeállítja a karosszéria CSS filter stringet
+ * az aktuális állapot alapján.
  */
-function drawTrabant() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function buildBodyFilter() {
+    let base = state.bodyFilter === 'none' ? '' : state.bodyFilter + ' ';
+    base += `brightness(${state.brightness / 100}) `;
+    base += `saturate(${state.saturation / 100}) `;
+    base += `hue-rotate(${state.hue}deg)`;
 
-    // Háttér (ég + út)
-    drawBackground();
-
-    // Autó árnyék
-    drawShadow();
-
-    // Autó részei alulról felfelé
-    drawBody();
-    drawWindows();
-    drawDetails();
-    drawWheels();
-    drawLights();
-    drawExhaust();
-
-    // Opcionális elemek
-    if (state.spoiler) drawSpoiler();
-    if (state.stripe) drawStripe();
-}
-
-/**
- * Háttér rajzolása: égbolt és aszfalt
- */
-function drawBackground() {
-    // Égbolt
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.65);
-    skyGrad.addColorStop(0, '#87CEEB');
-    skyGrad.addColorStop(1, '#b0e0ff');
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height * 0.65);
-
-    // Aszfalt
-    const roadGrad = ctx.createLinearGradient(0, canvas.height * 0.65, 0, canvas.height);
-    roadGrad.addColorStop(0, '#555');
-    roadGrad.addColorStop(1, '#333');
-    ctx.fillStyle = roadGrad;
-    ctx.fillRect(0, canvas.height * 0.65, canvas.width, canvas.height * 0.35);
-
-    // Útjelző csík
-    ctx.fillStyle = '#f1c40f';
-    ctx.fillRect(50, canvas.height * 0.72, 100, 8);
-    ctx.fillRect(200, canvas.height * 0.72, 100, 8);
-    ctx.fillRect(350, canvas.height * 0.72, 100, 8);
-    ctx.fillRect(500, canvas.height * 0.72, 100, 8);
-}
-
-/**
- * Árnyék rajzolása az autó alatt
- */
-function drawShadow() {
-    ctx.save();
-    ctx.globalAlpha = 0.3;
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-    ctx.ellipse(300, 310, 200, 20, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-}
-
-/**
- * Fő karosszéria rajzolása
- * A Trabant jellegzetes dobozos formáját közelítjük meg
- */
-function drawBody() {
-    const bodyColor = state.bodyColor;
-
-    // Gradiens a karosszériához (3D hatás)
-    const bodyGrad = ctx.createLinearGradient(100, 150, 100, 310);
-    bodyGrad.addColorStop(0, lightenColor(bodyColor, 40));
-    bodyGrad.addColorStop(0.5, bodyColor);
-    bodyGrad.addColorStop(1, darkenColor(bodyColor, 40));
-
-    // --- Alsó karosszéria (küszöb rész) ---
-    ctx.fillStyle = darkenColor(bodyColor, 30);
-    roundRect(ctx, 110, 255, 390, 50, 8);
-    ctx.fill();
-
-    // --- Fő karosszéria test ---
-    ctx.fillStyle = bodyGrad;
-    roundRect(ctx, 100, 170, 400, 100, 12);
-    ctx.fill();
-
-    // --- Tető ---
-    ctx.fillStyle = bodyGrad;
-    ctx.beginPath();
-    ctx.moveTo(160, 170);
-    ctx.lineTo(200, 110);
-    ctx.lineTo(400, 110);
-    ctx.lineTo(430, 170);
-    ctx.closePath();
-    ctx.fill();
-
-    // Karosszéria kontúr
-    ctx.strokeStyle = darkenColor(bodyColor, 60);
-    ctx.lineWidth = 2;
-    roundRect(ctx, 100, 170, 400, 100, 12);
-    ctx.stroke();
-
-    // Tető kontúr
-    ctx.beginPath();
-    ctx.moveTo(160, 170);
-    ctx.lineTo(200, 110);
-    ctx.lineTo(400, 110);
-    ctx.lineTo(430, 170);
-    ctx.closePath();
-    ctx.stroke();
-
-    // --- Motorháztető (Trabant jellegzetesség) ---
-    ctx.fillStyle = lightenColor(bodyColor, 20);
-    ctx.beginPath();
-    ctx.moveTo(100, 200);
-    ctx.lineTo(80, 220);
-    ctx.lineTo(80, 260);
-    ctx.lineTo(100, 270);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    // --- Csomagtartó ---
-    ctx.fillStyle = darkenColor(bodyColor, 20);
-    ctx.beginPath();
-    ctx.moveTo(500, 200);
-    ctx.lineTo(520, 220);
-    ctx.lineTo(520, 255);
-    ctx.lineTo(500, 260);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-}
-
-/**
- * Ablakok rajzolása - sötétítési effekttel
- */
-function drawWindows() {
-    const tintAlpha = state.windowTint / 100;
-    const windowBaseColor = `rgba(135, 206, 235, 0.7)`;
-
-    // Szélvédő
-    ctx.fillStyle = windowBaseColor;
-    ctx.beginPath();
-    ctx.moveTo(168, 168);
-    ctx.lineTo(205, 115);
-    ctx.lineTo(280, 115);
-    ctx.lineTo(280, 168);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = '#aaa';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Szélvédő sötétítés
-    ctx.fillStyle = `rgba(0, 0, 0, ${tintAlpha})`;
-    ctx.beginPath();
-    ctx.moveTo(168, 168);
-    ctx.lineTo(205, 115);
-    ctx.lineTo(280, 115);
-    ctx.lineTo(280, 168);
-    ctx.closePath();
-    ctx.fill();
-
-    // Hátsó szélvédő
-    ctx.fillStyle = windowBaseColor;
-    ctx.beginPath();
-    ctx.moveTo(320, 115);
-    ctx.lineTo(395, 115);
-    ctx.lineTo(425, 168);
-    ctx.lineTo(320, 168);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = '#aaa';
-    ctx.stroke();
-
-    ctx.fillStyle = `rgba(0, 0, 0, ${tintAlpha})`;
-    ctx.beginPath();
-    ctx.moveTo(320, 115);
-    ctx.lineTo(395, 115);
-    ctx.lineTo(425, 168);
-    ctx.lineTo(320, 168);
-    ctx.closePath();
-    ctx.fill();
-
-    // Bal oldalsó ablak
-    ctx.fillStyle = windowBaseColor;
-    ctx.fillRect(115, 185, 70, 55);
-    ctx.strokeStyle = '#aaa';
-    ctx.strokeRect(115, 185, 70, 55);
-    ctx.fillStyle = `rgba(0, 0, 0, ${tintAlpha})`;
-    ctx.fillRect(115, 185, 70, 55);
-
-    // Jobb oldalsó ablak
-    ctx.fillStyle = windowBaseColor;
-    ctx.fillRect(420, 185, 70, 55);
-    ctx.strokeStyle = '#aaa';
-    ctx.strokeRect(420, 185, 70, 55);
-    ctx.fillStyle = `rgba(0, 0, 0, ${tintAlpha})`;
-    ctx.fillRect(420, 185, 70, 55);
-
-    // Középső (B-pillér)
-    ctx.fillStyle = darkenColor(state.bodyColor, 40);
-    ctx.fillRect(288, 115, 30, 55);
-
-    // Ablak fényvisszaverődés
-    ctx.save();
-    ctx.globalAlpha = 0.15;
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.moveTo(175, 125);
-    ctx.lineTo(190, 115);
-    ctx.lineTo(250, 115);
-    ctx.lineTo(240, 125);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-}
-
-/**
- * Apró részletek: ajtó vonalak, kilincsek, hűtőrács
- */
-function drawDetails() {
-    ctx.strokeStyle = darkenColor(state.bodyColor, 50);
-    ctx.lineWidth = 1.5;
-
-    // Ajtó elválasztó vonal
-    ctx.beginPath();
-    ctx.moveTo(282, 170);
-    ctx.lineTo(282, 255);
-    ctx.stroke();
-
-    // Bal ajtó kilincs
-    ctx.fillStyle = '#c0c0c0';
-    roundRect(ctx, 230, 220, 35, 10, 4);
-    ctx.fill();
-    ctx.strokeStyle = '#888';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Jobb ajtó kilincs
-    roundRect(ctx, 340, 220, 35, 10, 4);
-    ctx.fill();
-    ctx.stroke();
-
-    // Hűtőrács (elöl)
-    ctx.strokeStyle = '#888';
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 4; i++) {
-        ctx.beginPath();
-        ctx.moveTo(82, 230 + i * 8);
-        ctx.lineTo(100, 230 + i * 8);
-        ctx.stroke();
+    // Matt fényezés: kontraszt és telítettség csökkentés
+    if (state.finish === 'matte') {
+        base += ' contrast(0.88) saturate(0.65)';
+    }
+    // Metálfényű: kontrast és telítettség növelés
+    else if (state.finish === 'metallic') {
+        base += ' contrast(1.12) saturate(1.4) brightness(1.05)';
     }
 
-    // Trabant embléma (középen)
-    ctx.save();
-    ctx.fillStyle = '#c0c0c0';
-    ctx.beginPath();
-    ctx.arc(300, 200, 12, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#888';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.fillStyle = '#3498db';
-    ctx.font = 'bold 8px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('T', 300, 200);
-    ctx.restore();
+    return base.trim() || 'none';
 }
 
 /**
- * Kerekek rajzolása a kiválasztott stílusban
+ * Az összes vizuális elemet frissíti az állapot alapján.
+ * Ezt hívjuk minden beállítás változáskor.
  */
-function drawWheels() {
-    drawWheel(175, 295, 45);  // Bal kerék
-    drawWheel(430, 295, 45);  // Jobb kerék
-}
+function updateCar() {
+    // Karosszéria filter alkalmazása
+    bodyLayer.style.filter = buildBodyFilter();
 
-/**
- * Egyedi kerék rajzoló - stílus alapján különböző küllőket rajzol
- * @param {number} x - középpont X
- * @param {number} y - középpont Y
- * @param {number} r - sugár
- */
-function drawWheel(x, y, r) {
-    // Gumiabroncs
-    ctx.fillStyle = '#1a1a1a';
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
+    // Ablak sötétítés (opacity + szín overlay helyett filter)
+    const tintFactor = 1 - (state.windowTint / 100);
+    windowLayer.style.filter = `brightness(${tintFactor})`;
+    windowLayer.style.opacity = tintFactor < 0.1 ? 0.05 : 1;
 
-    // Gumiabroncs oldalfal
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(x, y, r - 2, 0, Math.PI * 2);
-    ctx.stroke();
+    // Kerék kép csere
+    const wheelSrc = `assets/wheels/wheel_${state.wheel}.png`;
+    wheelFL.src = wheelSrc;
+    wheelRR.src = wheelSrc;
 
-    // Felni
-    ctx.fillStyle = state.wheelColor;
-    ctx.beginPath();
-    ctx.arc(x, y, r * 0.72, 0, Math.PI * 2);
-    ctx.fill();
+    // Kerék méret alkalmazása
+    const wheelSize = state.wheelSize;
+    wheelFL.style.width  = `${18 * wheelSize}%`;
+    wheelRR.style.width  = `${18 * wheelSize}%`;
 
-    const style = state.wheelStyle;
-
-    if (style === 'standard') {
-        // 4 egyszerű küllő
-        drawSpokes(x, y, r, 4, state.wheelColor);
-
-    } else if (style === 'sport') {
-        // 5 dupla küllő
-        ctx.strokeStyle = darkenColor(state.wheelColor, 30);
-        ctx.lineWidth = 4;
-        for (let i = 0; i < 5; i++) {
-            const angle = (i / 5) * Math.PI * 2;
-            const angle2 = angle + 0.15;
-            ctx.beginPath();
-            ctx.moveTo(x + Math.cos(angle) * r * 0.2, y + Math.sin(angle) * r * 0.2);
-            ctx.lineTo(x + Math.cos(angle) * r * 0.68, y + Math.sin(angle) * r * 0.68);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(x + Math.cos(angle2) * r * 0.2, y + Math.sin(angle2) * r * 0.2);
-            ctx.lineTo(x + Math.cos(angle2) * r * 0.68, y + Math.sin(angle2) * r * 0.68);
-            ctx.stroke();
-        }
-
-    } else if (style === 'classic') {
-        // 8 vékony klasszikus küllő
-        drawSpokes(x, y, r, 8, state.wheelColor);
-
-    } else if (style === 'chrome') {
-        // Króm felni: csillogó hatás
-        const chromeGrad = ctx.createRadialGradient(x - r * 0.2, y - r * 0.2, 2, x, y, r * 0.72);
-        chromeGrad.addColorStop(0, '#ffffff');
-        chromeGrad.addColorStop(0.3, '#c0c0c0');
-        chromeGrad.addColorStop(0.7, '#808080');
-        chromeGrad.addColorStop(1, '#404040');
-        ctx.fillStyle = chromeGrad;
-        ctx.beginPath();
-        ctx.arc(x, y, r * 0.72, 0, Math.PI * 2);
-        ctx.fill();
-        drawSpokes(x, y, r, 6, '#c0c0c0');
+    // Felni szín filter
+    if (state.wheelFilter !== 'none') {
+        wheelFL.style.filter = state.wheelFilter;
+        wheelRR.style.filter = state.wheelFilter;
+    } else {
+        wheelFL.style.filter = 'none';
+        wheelRR.style.filter = 'none';
     }
 
-    // Felni középső csavar
-    ctx.fillStyle = '#888';
-    ctx.beginPath();
-    ctx.arc(x, y, r * 0.18, 0, Math.PI * 2);
-    ctx.fill();
+    // Autó magasság (lowering)
+    const heightOffset = -state.rideHeight;
+    wheelFL.style.bottom = `${8 + heightOffset * 0.3}%`;
+    wheelRR.style.bottom = `${8 + heightOffset * 0.3}%`;
+    bodyLayer.style.transform = `translateY(${state.rideHeight * 0.5}px)`;
 
-    ctx.fillStyle = '#555';
-    ctx.beginPath();
-    ctx.arc(x, y, r * 0.1, 0, Math.PI * 2);
-    ctx.fill();
+    // Spoiler láthatóság
+    spoilerLayer.classList.toggle('hidden', !state.spoiler);
 
-    // Gumiabroncs fehér felirat szimulálása
-    ctx.save();
-    ctx.globalAlpha = 0.4;
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(x, y, r * 0.85, Math.PI * 0.3, Math.PI * 0.9);
-    ctx.stroke();
-    ctx.restore();
-}
+    // Kipufogó kép csere
+    exhaustLayer.src = `assets/parts/exhaust_${state.exhaust}.png`;
 
-/**
- * Küllők rajzolása adott számban
- */
-function drawSpokes(x, y, r, count, color) {
-    ctx.strokeStyle = darkenColor(color, 20);
-    ctx.lineWidth = 3.5;
-    for (let i = 0; i < count; i++) {
-        const angle = (i / count) * Math.PI * 2;
-        ctx.beginPath();
-        ctx.moveTo(x + Math.cos(angle) * r * 0.15, y + Math.sin(angle) * r * 0.15);
-        ctx.lineTo(x + Math.cos(angle) * r * 0.68, y + Math.sin(angle) * r * 0.68);
-        ctx.stroke();
+    // Fényszóró kép csere
+    const lightsSuffix = state.lights === 'standard' ? '' : `_${state.lights}`;
+    lightsLayer.src = `assets/parts/lights${lightsSuffix}.png`;
+
+    // Háttér csere
+    carStage.style.backgroundImage = `url('${state.background}')`;
+
+    // Matt/metál osztály a stage-re
+    carStage.className = 'car-stage';
+    if (state.finish !== 'normal') {
+        carStage.classList.add(state.finish);
     }
+
+    // Összefoglaló szöveg frissítése
+    updateSummary();
 }
 
 /**
- * Fényszórók és hátsó lámpák
+ * Frissíti a konfiguráció összefoglaló szövegét
  */
-function drawLights() {
-    // Első fényszóró
-    const headlightGrad = ctx.createRadialGradient(90, 225, 2, 90, 225, 18);
-    headlightGrad.addColorStop(0, '#ffffc0');
-    headlightGrad.addColorStop(0.5, '#ffff80');
-    headlightGrad.addColorStop(1, '#ffcc00');
-    ctx.fillStyle = headlightGrad;
-    ctx.beginPath();
-    ctx.ellipse(90, 225, 12, 18, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#888';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Első fény fényvisszaverő keret
-    ctx.strokeStyle = '#c0c0c0';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.ellipse(90, 225, 14, 20, 0, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Hátsó lámpa
-    ctx.fillStyle = '#e74c3c';
-    ctx.beginPath();
-    ctx.ellipse(512, 230, 10, 16, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#888';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Irányjelző (narancs)
-    ctx.fillStyle = '#f39c12';
-    ctx.beginPath();
-    ctx.ellipse(512, 250, 7, 8, 0, 0, Math.PI * 2);
-    ctx.fill();
-}
-
-/**
- * Kipufogó rajzolása
- */
-function drawExhaust() {
-    ctx.fillStyle = '#555';
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 1.5;
-
-    if (state.exhaustStyle === 'standard') {
-        // Egy sima cső
-        ctx.fillRect(490, 268, 35, 10);
-        ctx.strokeRect(490, 268, 35, 10);
-        ctx.fillStyle = '#222';
-        ctx.beginPath();
-        ctx.arc(525, 273, 5, 0, Math.PI * 2);
-        ctx.fill();
-
-    } else if (state.exhaustStyle === 'sport') {
-        // Dupla cső
-        ctx.fillRect(490, 260, 35, 8);
-        ctx.strokeRect(490, 260, 35, 8);
-        ctx.fillRect(490, 272, 35, 8);
-        ctx.strokeRect(490, 272, 35, 8);
-        ctx.fillStyle = '#222';
-        ctx.beginPath();
-        ctx.arc(525, 264, 4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(525, 276, 4, 0, Math.PI * 2);
-        ctx.fill();
-
-    } else if (state.exhaustStyle === 'racing') {
-        // Quad cső
-        const positions = [[490, 258], [490, 268], [503, 258], [503, 268]];
-        positions.forEach(([px, py]) => {
-            ctx.fillStyle = '#555';
-            ctx.fillRect(px, py, 28, 8);
-            ctx.strokeRect(px, py, 28, 8);
-            ctx.fillStyle = '#222';
-            ctx.beginPath();
-            ctx.arc(px + 28, py + 4, 3.5, 0, Math.PI * 2);
-            ctx.fill();
-        });
-    }
-}
-
-/**
- * Hátsó spoiler rajzolása
- */
-function drawSpoiler() {
-    const spoilerColor = darkenColor(state.bodyColor, 20);
-
-    // Tartólábak
-    ctx.fillStyle = spoilerColor;
-    ctx.fillRect(360, 100, 10, 25);
-    ctx.fillRect(410, 100, 10, 25);
-
-    // Spoiler lap
-    ctx.fillStyle = darkenColor(state.bodyColor, 10);
-    roundRect(ctx, 345, 90, 90, 15, 4);
-    ctx.fill();
-    ctx.strokeStyle = darkenColor(state.bodyColor, 60);
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Spoiler él
-    ctx.fillStyle = '#333';
-    roundRect(ctx, 345, 90, 90, 5, 2);
-    ctx.fill();
-}
-
-/**
- * Racing csík rajzolása az autó tetején/oldalán
- */
-function drawStripe() {
-    ctx.save();
-    ctx.globalAlpha = 0.85;
-    ctx.fillStyle = state.stripeColor;
-
-    // Oldalsó csík (bal)
-    ctx.fillRect(110, 210, 390, 12);
-
-    // Tető csík
-    ctx.beginPath();
-    ctx.moveTo(200, 110);
-    ctx.lineTo(400, 110);
-    ctx.lineTo(400, 122);
-    ctx.lineTo(200, 122);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.restore();
+function updateSummary() {
+    const parts = [];
+    parts.push(`Szín: ${state.bodyColor}`);
+    parts.push(`Felni: ${state.wheel}`);
+    if (state.spoiler) parts.push('Spoiler: ✓');
+    if (state.windowTint > 0) parts.push(`Tint: ${state.windowTint}%`);
+    document.getElementById('summaryText').textContent = parts.join(' | ');
 }
 
 // ============================================================
-// SEGÉDFÜGGVÉNYEK
+// TAB NAVIGÁCIÓ
 // ============================================================
-
-/**
- * Lekerekített sarkú téglalap rajzolása
- */
-function roundRect(ctx, x, y, width, height, radius) {
-    ctx.beginPath();
-    ctx.moveTo(x + radius, y);
-    ctx.lineTo(x + width - radius, y);
-    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-    ctx.lineTo(x + width, y + height - radius);
-    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-    ctx.lineTo(x + radius, y + height);
-    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-    ctx.lineTo(x, y + radius);
-    ctx.quadraticCurveTo(x, y, x + radius, y);
-    ctx.closePath();
-}
-
-/**
- * Szín sötétítése (hex → rgb manipuláció)
- * @param {string} hex - Hex színkód
- * @param {number} amount - Sötétítés mértéke (0-255)
- */
-function darkenColor(hex, amount) {
-    const num = parseInt(hex.replace('#', ''), 16);
-    const r = Math.max(0, (num >> 16) - amount);
-    const g = Math.max(0, ((num >> 8) & 0xff) - amount);
-    const b = Math.max(0, (num & 0xff) - amount);
-    return `rgb(${r},${g},${b})`;
-}
-
-/**
- * Szín világosítása
- * @param {string} hex - Hex színkód
- * @param {number} amount - Világosítás mértéke
- */
-function lightenColor(hex, amount) {
-    const num = parseInt(hex.replace('#', ''), 16);
-    const r = Math.min(255, (num >> 16) + amount);
-    const g = Math.min(255, ((num >> 8) & 0xff) + amount);
-    const b = Math.min(255, (num & 0xff) + amount);
-    return `rgb(${r},${g},${b})`;
-}
-
-// ============================================================
-// ESEMÉNYKEZELŐK
-// ============================================================
-
-// Karosszéria szín gombok
-document.querySelectorAll('.color-btn:not([data-target])').forEach(btn => {
+document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        document.querySelectorAll('.color-btn:not([data-target])').forEach(b => b.classList.remove('active'));
+        // Aktív tab gomb
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        state.bodyColor = btn.dataset.color;
-        drawTrabant();
+
+        // Aktív tab tartalom megjelenítése
+        const tabId = btn.dataset.tab;
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.getElementById(`tab-${tabId}`).classList.add('active');
     });
 });
 
-// Felni szín gombok
-document.querySelectorAll('.color-btn[data-target="wheel"]').forEach(btn => {
+// ============================================================
+// SZÍN KEZELŐK
+// ============================================================
+
+// Karosszéria szín preset gombok
+document.querySelectorAll('.preset-color:not([data-target])').forEach(btn => {
     btn.addEventListener('click', () => {
-        document.querySelectorAll('.color-btn[data-target="wheel"]').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.preset-color:not([data-target])').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        state.wheelColor = btn.dataset.color;
-        drawTrabant();
+
+        // CSS filter beállítása az adott színre
+        state.bodyFilter = btn.dataset.color;
+        state.bodyColor  = btn.dataset.name || btn.title;
+        updateCar();
     });
 });
 
-// Egyéni szín picker
-document.getElementById('customColor').addEventListener('input', (e) => {
-    state.bodyColor = e.target.value;
-    drawTrabant();
+// Fényerő csúszka
+document.getElementById('brightness').addEventListener('input', (e) => {
+    state.brightness = parseInt(e.target.value);
+    document.getElementById('brightnessVal').textContent = `${state.brightness}%`;
+    updateCar();
 });
 
-// Felni stílus
-document.getElementById('wheelStyle').addEventListener('change', (e) => {
-    state.wheelStyle = e.target.value;
-    drawTrabant();
+// Telítettség csúszka
+document.getElementById('saturation').addEventListener('input', (e) => {
+    state.saturation = parseInt(e.target.value);
+    document.getElementById('saturationVal').textContent = `${state.saturation}%`;
+    updateCar();
 });
+
+// Hue-rotate csúszka
+document.getElementById('hueRotate').addEventListener('input', (e) => {
+    state.hue = parseInt(e.target.value);
+    document.getElementById('hueVal').textContent = `${state.hue}°`;
+    updateCar();
+});
+
+// Fényezés típus gombok
+document.querySelectorAll('.finish-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.finish-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.finish = btn.dataset.finish;
+        updateCar();
+    });
+});
+
+// Ablak sötétítés
+document.getElementById('windowTint').addEventListener('input', (e) => {
+    state.windowTint = parseInt(e.target.value);
+    document.getElementById('tintVal').textContent = `${state.windowTint}%`;
+    updateCar();
+});
+
+// ============================================================
+// FELNI KEZELŐK
+// ============================================================
+
+// Felni stílus választó
+document.querySelectorAll('.wheel-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+        document.querySelectorAll('.wheel-option').forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        state.wheel = opt.dataset.wheel;
+        updateCar();
+    });
+});
+
+// Felni méret
+document.querySelectorAll('.size-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.wheelSize = parseFloat(btn.dataset.size);
+        updateCar();
+    });
+});
+
+// Felni szín filter
+document.querySelectorAll('.preset-color[data-target="wheel"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.preset-color[data-target="wheel"]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.wheelFilter = btn.dataset.color;
+        updateCar();
+    });
+});
+
+// ============================================================
+// ALKATRÉSZ KEZELŐK
+// ============================================================
 
 // Spoiler toggle
 document.getElementById('spoilerToggle').addEventListener('change', (e) => {
     state.spoiler = e.target.checked;
-    drawTrabant();
+    updateCar();
 });
 
-// Ablak sötétítés csúszka
-const tintSlider = document.getElementById('windowTint');
-const tintValue = document.getElementById('tintValue');
-tintSlider.addEventListener('input', (e) => {
-    state.windowTint = parseInt(e.target.value);
-    tintValue.textContent = `${state.windowTint}%`;
-    drawTrabant();
+// Kipufogó választó
+document.querySelectorAll('.part-card[data-exhaust]').forEach(card => {
+    card.addEventListener('click', () => {
+        document.querySelectorAll('.part-card[data-exhaust]').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        state.exhaust = card.dataset.exhaust;
+        updateCar();
+    });
 });
 
-// Kipufogó stílus
-document.getElementById('exhaustStyle').addEventListener('change', (e) => {
-    state.exhaustStyle = e.target.value;
-    drawTrabant();
+// Fényszóró választó
+document.querySelectorAll('.part-card[data-lights]').forEach(card => {
+    card.addEventListener('click', () => {
+        document.querySelectorAll('.part-card[data-lights]').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        state.lights = card.dataset.lights;
+        updateCar();
+    });
 });
 
-// Csík toggle
-document.getElementById('stripeToggle').addEventListener('change', (e) => {
-    state.stripe = e.target.checked;
-    drawTrabant();
+// Felfüggesztés magasság
+document.getElementById('rideHeight').addEventListener('input', (e) => {
+    state.rideHeight = parseInt(e.target.value);
+    const val = state.rideHeight;
+    document.getElementById('rideVal').textContent =
+        val === 0 ? 'Alap' : val < 0 ? `+${Math.abs(val)}mm sport` : `-${val}mm emelt`;
+    updateCar();
 });
 
-// Csík szín
-document.getElementById('stripeColor').addEventListener('input', (e) => {
-    state.stripeColor = e.target.value;
-    drawTrabant();
+// ============================================================
+// MATRICA KEZELŐK
+// ============================================================
+
+// Matrica be/ki kapcsolók
+document.querySelectorAll('.sticker-toggle').forEach(toggle => {
+    toggle.addEventListener('change', (e) => {
+        const targetId = e.target.dataset.target;
+        const layer = document.getElementById(targetId);
+        if (layer) {
+            layer.classList.toggle('hidden', !e.target.checked);
+            state.stickers[targetId] = e.target.checked;
+        }
+    });
 });
 
-// Reset gomb - visszaállítja az alapértelmezett állapotot
+// Matrica szín filter
+document.querySelectorAll('.preset-color[data-target="sticker"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.preset-color[data-target="sticker"]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.stickerFilter = btn.dataset.color;
+
+        // Minden látható matrica rétegre alkalmaz
+        ['stickerStripe', 'stickerFlames'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el && !el.classList.contains('hidden')) {
+                el.style.filter = state.stickerFilter !== 'none' ? state.stickerFilter : 'none';
+            }
+        });
+    });
+});
+
+// ============================================================
+// HÁTTÉR VÁLASZTÓ
+// ============================================================
+document.querySelectorAll('.bg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.bg-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.background = btn.dataset.bg;
+        updateCar();
+    });
+});
+
+// ============================================================
+// KÉPERNYŐKÉP MENTÉS (html2canvas)
+// ============================================================
+document.getElementById('screenshotBtn').addEventListener('click', () => {
+    html2canvas(carStage, {
+        useCORS: true,
+        scale: 2,   // 2x felbontás jobb minőségért
+        logging: false
+    }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'trabant_konfig.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    });
+});
+
+// ============================================================
+// KONFIGURÁCIÓ MEGOSZTÁS (URL paraméterként)
+// ============================================================
+document.getElementById('shareBtn').addEventListener('click', () => {
+    // Az állapotot Base64 kódolva az URL-be tesszük
+    const encoded = btoa(JSON.stringify({
+        bodyFilter: state.bodyFilter,
+        bodyColor: state.bodyColor,
+        brightness: state.brightness,
+        saturation: state.saturation,
+        hue: state.hue,
+        finish: state.finish,
+        windowTint: state.windowTint,
+        wheel: state.wheel,
+        wheelSize: state.wheelSize,
+        spoiler: state.spoiler,
+        exhaust: state.exhaust
+    }));
+
+    const shareUrl = `${window.location.origin}${window.location.pathname}?config=${encoded}`;
+
+    navigator.clipboard.writeText(shareUrl).then(() => {
+        alert('✅ Link vágólapra másolva!\n\n' + shareUrl);
+    }).catch(() => {
+        prompt('Másold ki a linket:', shareUrl);
+    });
+});
+
+/**
+ * URL paraméterből konfiguráció betöltése
+ * Ha valaki megosztott linken nyitja meg az oldalt,
+ * automatikusan betölti a beállításokat.
+ */
+function loadFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    const config = params.get('config');
+    if (!config) return;
+
+    try {
+        const loaded = JSON.parse(atob(config));
+        Object.assign(state, loaded);
+
+        // UI szinkronizálása a betöltött állapottal
+        document.getElementById('brightness').value = state.brightness;
+        document.getElementById('brightnessVal').textContent = `${state.brightness}%`;
+        document.getElementById('saturation').value = state.saturation;
+        document.getElementById('saturationVal').textContent = `${state.saturation}%`;
+        document.getElementById('hueRotate').value = state.hue;
+        document.getElementById('hueVal').textContent = `${state.hue}°`;
+        document.getElementById('windowTint').value = state.windowTint;
+        document.getElementById('tintVal').textContent = `${state.windowTint}%`;
+        document.getElementById('spoilerToggle').checked = state.spoiler;
+
+        updateCar();
+    } catch(e) {
+        console.warn('Érvénytelen konfiguráció az URL-ben:', e);
+    }
+}
+
+// ============================================================
+// RESET
+// ============================================================
 document.getElementById('resetBtn').addEventListener('click', () => {
-    state = { ...defaultState };
+    // Állapot visszaállítása
+    Object.assign(state, {
+        bodyFilter: 'none',
+        bodyColor: 'Eredeti',
+        brightness: 100,
+        saturation: 100,
+        hue: 0,
+        finish: 'normal',
+        windowTint: 0,
+        wheel: 'standard',
+        wheelSize: 1,
+        wheelFilter: 'none',
+        spoiler: false,
+        exhaust: 'standard',
+        lights: 'standard',
+        rideHeight: 0,
+        stickers: {},
+        stickerFilter: 'none'
+    });
 
     // UI elemek visszaállítása
-    document.getElementById('wheelStyle').value = 'standard';
+    document.getElementById('brightness').value    = 100;
+    document.getElementById('brightnessVal').textContent = '100%';
+    document.getElementById('saturation').value    = 100;
+    document.getElementById('saturationVal').textContent = '100%';
+    document.getElementById('hueRotate').value     = 0;
+    document.getElementById('hueVal').textContent  = '0°';
+    document.getElementById('windowTint').value    = 0;
+    document.getElementById('tintVal').textContent = '0%';
+    document.getElementById('rideHeight').value    = 0;
+    document.getElementById('rideVal').textContent = 'Alap';
     document.getElementById('spoilerToggle').checked = false;
-    document.getElementById('windowTint').value = 0;
-    tintValue.textContent = '0%';
-    document.getElementById('exhaustStyle').value = 'standard';
-    document.getElementById('stripeToggle').checked = false;
-    document.getElementById('stripeColor').value = '#ffffff';
-    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
 
-    drawTrabant();
-});
+    document.querySelectorAll('.sticker-toggle').forEach(t => t.checked = false);
+    document.querySelectorAll('.preset-color').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('[data-wheel]').forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-wheel="standard"]')?.classList.add('active');
+    document.querySelectorAll('.finish-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-finish="normal"]')?.classList.add('active');
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-size="1"]')?.classList.add('active');
 
-// Kép mentése PNG-ként
-document.getElementById('saveBtn').addEventListener('click', () => {
-    const link = document.createElement('a');
-    link.download = 'trabant_tuning.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
+    ['stickerStripe', 'stickerFlames'].forEach(id => {
+        document.getElementById(id)?.classList.add('hidden');
+    });
+
+    updateCar();
 });
 
 // ============================================================
-// INICIALIZÁLÁS - oldal betöltésekor első rajzolás
+// INICIALIZÁLÁS
 // ============================================================
-drawTrabant();
+loadFromURL();  // URL-ből betöltés ha van config
+updateCar();    // Első renderelés

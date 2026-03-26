@@ -7,104 +7,447 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>🚗 Trabant Tuning Studio</h1>
 
-        <div class="main-layout">
-            <!-- Autó megjelenítő terület -->
-            <div class="car-display">
-                <canvas id="trabantCanvas" width="600" height="400"></canvas>
+<div class="app">
+    <header>
+        <h1>🚗 Trabant Tuning Studio</h1>
+        <p class="subtitle">Konfiguráld meg álomautódat</p>
+    </header>
+
+    <div class="workspace">
+
+        <!-- ===== Autó megjelenítő ===== -->
+        <div class="car-viewer">
+
+            <!-- Háttér választó gombok -->
+            <div class="bg-selector">
+                <button class="bg-btn active" data-bg="assets/backgrounds/garage.jpg">🏠 Garázs</button>
+                <button class="bg-btn" data-bg="assets/backgrounds/street.jpg">🛣️ Utca</button>
+                <button class="bg-btn" data-bg="assets/backgrounds/showroom.jpg">✨ Showroom</button>
             </div>
 
-            <!-- Tuning panel -->
-            <div class="tuning-panel">
-                <h2>⚙️ Tuning Opciók</h2>
+            <!-- Rétegezett autó megjelenítő -->
+            <div class="car-stage" id="carStage">
 
-                <!-- Szín választó -->
-                <div class="option-group">
-                    <h3>🎨 Karosszéria szín</h3>
-                    <div class="color-options">
-                        <div class="color-btn" style="background:#e74c3c" data-color="#e74c3c" title="Piros"></div>
-                        <div class="color-btn" style="background:#3498db" data-color="#3498db" title="Kék"></div>
-                        <div class="color-btn" style="background:#2ecc71" data-color="#2ecc71" title="Zöld"></div>
-                        <div class="color-btn" style="background:#f1c40f" data-color="#f1c40f" title="Sárga"></div>
-                        <div class="color-btn" style="background:#1a1a1a" data-color="#1a1a1a" title="Fekete"></div>
-                        <div class="color-btn" style="background:#ecf0f1" data-color="#ecf0f1" title="Fehér"></div>
-                        <div class="color-btn" style="background:#e67e22" data-color="#e67e22" title="Narancs"></div>
-                        <div class="color-btn" style="background:#9b59b6" data-color="#9b59b6" title="Lila"></div>
-                        <input type="color" id="customColor" title="Egyéni szín">
+                <!-- RÉTEG 1: Alap karosszéria -->
+                <img 
+                    class="car-layer" 
+                    id="bodyLayer"
+                    src="assets/body/trabant_body.jpg" 
+                    alt="Karosszéria"
+                    draggable="false"
+                >
+
+                <!-- RÉTEG 2: Bal első kerék -->
+                <img 
+                    class="car-layer wheel-layer" 
+                    id="wheelFrontLeft"
+                    src="assets/wheels/wheel_standard.jpg"
+                    alt="Első kerék bal"
+                    style="left: 12%; bottom: 8%; width: 18%;"
+                    draggable="false"
+                >
+
+                <!-- RÉTEG 3: Jobb hátsó kerék -->
+                <img 
+                    class="car-layer wheel-layer" 
+                    id="wheelRearRight"
+                    src="assets/wheels/wheel_standard.jpg"
+                    alt="Hátsó kerék jobb"
+                    style="right: 14%; bottom: 8%; width: 18%;"
+                    draggable="false"
+                >
+
+                <!-- RÉTEG 4: Ablakok -->
+                <img 
+                    class="car-layer" 
+                    id="windowLayer"
+                    src="assets/parts/windows.png"
+                    alt="Ablakok"
+                    draggable="false"
+                >
+
+                <!-- RÉTEG 5: Fényszórók -->
+                <img 
+                    class="car-layer" 
+                    id="lightsLayer"
+                    src="assets/parts/lights.png"
+                    alt="Fények"
+                    draggable="false"
+                >
+
+                <!-- RÉTEG 6: Kipufogó (opcionális) -->
+                <img 
+                    class="car-layer" 
+                    id="exhaustLayer"
+                    src="assets/parts/exhaust_standard.png"
+                    alt="Kipufogó"
+                    draggable="false"
+                >
+
+                <!-- RÉTEG 7: Spoiler (alapból rejtett) -->
+                <img 
+                    class="car-layer hidden" 
+                    id="spoilerLayer"
+                    src="assets/parts/spoiler.png"
+                    alt="Spoiler"
+                    draggable="false"
+                >
+
+                <!-- RÉTEG 8: Matrica csík (alapból rejtett) -->
+                <img 
+                    class="car-layer hidden" 
+                    id="stickerStripe"
+                    src="assets/stickers/stripe_racing.png"
+                    alt="Racing csík"
+                    draggable="false"
+                >
+
+                <!-- RÉTEG 9: Lángok matrica (alapból rejtett) -->
+                <img 
+                    class="car-layer hidden" 
+                    id="stickerFlames"
+                    src="assets/stickers/flames.png"
+                    alt="Lángok"
+                    draggable="false"
+                >
+
+            </div>
+
+            <!-- Konfigurációs összefoglaló -->
+            <div class="config-summary" id="configSummary">
+                <span id="summaryText">Alap konfiguráció</span>
+            </div>
+
+            <!-- Mentés gomb -->
+            <div class="viewer-actions">
+                <button class="action-btn screenshot-btn" id="screenshotBtn">
+                    📸 Képernyőkép mentése
+                </button>
+                <button class="action-btn share-btn" id="shareBtn">
+                    🔗 Konfiguráció megosztása
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== Tuning Panel ===== -->
+        <div class="tuning-panel">
+
+            <!-- Tab navigáció -->
+            <div class="tab-nav">
+                <button class="tab-btn active" data-tab="color">🎨 Szín</button>
+                <button class="tab-btn" data-tab="wheels">🔧 Felnik</button>
+                <button class="tab-btn" data-tab="parts">⚙️ Alkatrészek</button>
+                <button class="tab-btn" data-tab="stickers">🏷️ Matricák</button>
+            </div>
+
+            <!-- ===== SZÍN TAB ===== -->
+            <div class="tab-content active" id="tab-color">
+                <h3>Karosszéria szín</h3>
+
+                <div class="color-presets">
+                    <div class="preset-color active" 
+                         data-color="hue-rotate(0deg) saturate(100%)" 
+                         data-name="Eredeti"
+                         style="background: #c8a882;"
+                         title="Eredeti trabant szín">
+                    </div>
+                    <div class="preset-color" 
+                         data-color="hue-rotate(0deg) saturate(0%) brightness(0.2)" 
+                         data-name="Fekete"
+                         style="background: #1a1a1a;"
+                         title="Fekete">
+                    </div>
+                    <div class="preset-color" 
+                         data-color="hue-rotate(0deg) saturate(0%) brightness(2)" 
+                         data-name="Fehér"
+                         style="background: #f0f0f0;"
+                         title="Fehér">
+                    </div>
+                    <div class="preset-color" 
+                         data-color="hue-rotate(220deg) saturate(400%) brightness(0.8)" 
+                         data-name="Kék"
+                         style="background: #1a4fa0;"
+                         title="Kék">
+                    </div>
+                    <div class="preset-color" 
+                         data-color="hue-rotate(100deg) saturate(300%) brightness(0.7)" 
+                         data-name="Zöld"
+                         style="background: #1a7a1a;"
+                         title="Zöld">
+                    </div>
+                    <div class="preset-color" 
+                         data-color="hue-rotate(330deg) saturate(400%) brightness(0.8)" 
+                         data-name="Piros"
+                         style="background: #c0001a;"
+                         title="Piros">
+                    </div>
+                    <div class="preset-color" 
+                         data-color="hue-rotate(30deg) saturate(400%) brightness(0.9)" 
+                         data-name="Narancs"
+                         style="background: #d45500;"
+                         title="Narancs">
+                    </div>
+                    <div class="preset-color" 
+                         data-color="hue-rotate(270deg) saturate(300%) brightness(0.7)" 
+                         data-name="Lila"
+                         style="background: #5a0080;"
+                         title="Lila">
+                    </div>
+                    <div class="preset-color" 
+                         data-color="hue-rotate(180deg) saturate(300%) brightness(0.7)" 
+                         data-name="Türkiz"
+                         style="background: #007a7a;"
+                         title="Türkiz">
+                    </div>
+                    <div class="preset-color" 
+                         data-color="hue-rotate(50deg) saturate(200%) brightness(1.1)" 
+                         data-name="Sárga"
+                         style="background: #c8b400;"
+                         title="Sárga">
                     </div>
                 </div>
 
-                <!-- Felni választó -->
-                <div class="option-group">
-                    <h3>🔧 Felni stílus</h3>
-                    <select id="wheelStyle">
-                        <option value="standard">Standard</option>
-                        <option value="sport">Sport</option>
-                        <option value="classic">Klasszikus küllős</option>
-                        <option value="chrome">Króm</option>
-                    </select>
-                </div>
+                <!-- Finomhangolás -->
+                <div class="fine-tune">
+                    <h4>Finomhangolás</h4>
 
-                <!-- Felni szín -->
-                <div class="option-group">
-                    <h3>🎨 Felni szín</h3>
-                    <div class="color-options">
-                        <div class="color-btn" style="background:#1a1a1a" data-color="#1a1a1a" data-target="wheel" title="Fekete"></div>
-                        <div class="color-btn" style="background:#c0c0c0" data-color="#c0c0c0" data-target="wheel" title="Ezüst"></div>
-                        <div class="color-btn" style="background:#FFD700" data-color="#FFD700" data-target="wheel" title="Arany"></div>
-                        <div class="color-btn" style="background:#b87333" data-color="#b87333" data-target="wheel" title="Bronz"></div>
+                    <label>Fényerő</label>
+                    <div class="slider-row">
+                        <input type="range" id="brightness" min="50" max="200" value="100">
+                        <span id="brightnessVal">100%</span>
+                    </div>
+
+                    <label>Telítettség</label>
+                    <div class="slider-row">
+                        <input type="range" id="saturation" min="0" max="500" value="100">
+                        <span id="saturationVal">100%</span>
+                    </div>
+
+                    <label>Árnyalat (Hue)</label>
+                    <div class="slider-row">
+                        <input type="range" id="hueRotate" min="0" max="360" value="0">
+                        <span id="hueVal">0°</span>
+                    </div>
+
+                    <label>Fényezés típusa</label>
+                    <div class="finish-options">
+                        <button class="finish-btn active" data-finish="normal">
+                            🔵 Normál
+                        </button>
+                        <button class="finish-btn" data-finish="metallic">
+                            ✨ Metálfényű
+                        </button>
+                        <button class="finish-btn" data-finish="matte">
+                            🔲 Matt
+                        </button>
                     </div>
                 </div>
+
+                <!-- Ablak sötétítés -->
+                <div class="option-section">
+                    <h4>🕶️ Ablak sötétítés</h4>
+                    <div class="slider-row">
+                        <input type="range" id="windowTint" min="0" max="95" value="0">
+                        <span id="tintVal">0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== FELNIK TAB ===== -->
+            <div class="tab-content" id="tab-wheels">
+                <h3>Felni választó</h3>
+
+                <div class="wheel-options">
+                    <div class="wheel-option active" data-wheel="standard">
+                        <img src="assets/wheels/wheel_standard.png" alt="Standard">
+                        <span>Standard</span>
+                    </div>
+                    <div class="wheel-option" data-wheel="sport">
+                        <img src="assets/wheels/wheel_sport.png" alt="Sport">
+                        <span>Sport</span>
+                    </div>
+                    <div class="wheel-option" data-wheel="chrome">
+                        <img src="assets/wheels/wheel_chrome.png" alt="Króm">
+                        <span>Króm</span>
+                    </div>
+                    <div class="wheel-option" data-wheel="classic">
+                        <img src="assets/wheels/wheel_classic.png" alt="Klasszikus">
+                        <span>Klasszikus</span>
+                    </div>
+                </div>
+
+                <!-- Felni méret -->
+                <div class="option-section">
+                    <h4>Felni méret</h4>
+                    <div class="size-options">
+                        <button class="size-btn" data-size="0.85">13"</button>
+                        <button class="size-btn active" data-size="1">15"</button>
+                        <button class="size-btn" data-size="1.15">17"</button>
+                        <button class="size-btn" data-size="1.3">19"</button>
+                    </div>
+                </div>
+
+                <!-- Felni szín filter -->
+                <div class="option-section">
+                    <h4>Felni szín</h4>
+                    <div class="color-presets small">
+                        <div class="preset-color active" 
+                             data-target="wheel"
+                             data-color="none" 
+                             style="background: #c0c0c0;"
+                             title="Eredeti">
+                        </div>
+                        <div class="preset-color" 
+                             data-target="wheel"
+                             data-color="brightness(0.1)" 
+                             style="background: #1a1a1a;"
+                             title="Fekete">
+                        </div>
+                        <div class="preset-color" 
+                             data-target="wheel"
+                             data-color="brightness(2) saturate(0%)" 
+                             style="background: #f0f0f0;"
+                             title="Fehér">
+                        </div>
+                        <div class="preset-color" 
+                             data-target="wheel"
+                             data-color="sepia(100%) saturate(300%) hue-rotate(30deg)" 
+                             style="background: #b8860b;"
+                             title="Arany">
+                        </div>
+                        <div class="preset-color" 
+                             data-target="wheel"
+                             data-color="hue-rotate(220deg) saturate(300%)" 
+                             style="background: #1a4fa0;"
+                             title="Kék">
+                        </div>
+                        <div class="preset-color" 
+                             data-target="wheel"
+                             data-color="hue-rotate(330deg) saturate(400%)" 
+                             style="background: #c0001a;"
+                             title="Piros">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== ALKATRÉSZEK TAB ===== -->
+            <div class="tab-content" id="tab-parts">
+                <h3>Alkatrészek</h3>
 
                 <!-- Spoiler -->
-                <div class="option-group">
-                    <h3>💨 Spoiler</h3>
-                    <label class="toggle">
+                <div class="part-option">
+                    <div class="part-info">
+                        <span class="part-icon">💨</span>
+                        <div>
+                            <strong>Hátsó spoiler</strong>
+                            <small>Aerodinamikai kiegészítő</small>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
                         <input type="checkbox" id="spoilerToggle">
-                        <span class="slider"></span>
-                        Hátsó spoiler
+                        <span class="toggle-slider"></span>
                     </label>
-                </div>
-
-                <!-- Ablak tinting -->
-                <div class="option-group">
-                    <h3>🕶️ Ablak sötétítés</h3>
-                    <input type="range" id="windowTint" min="0" max="90" value="0">
-                    <span id="tintValue">0%</span>
                 </div>
 
                 <!-- Kipufogó -->
-                <div class="option-group">
-                    <h3>🔩 Kipufogó</h3>
-                    <select id="exhaustStyle">
-                        <option value="standard">Standard</option>
-                        <option value="sport">Sport dupla</option>
-                        <option value="racing">Racing quad</option>
-                    </select>
+                <div class="option-section">
+                    <h4>🔩 Kipufogó rendszer</h4>
+                    <div class="part-cards">
+                        <div class="part-card active" data-exhaust="standard">
+                            <img src="assets/parts/exhaust_standard.png" alt="Standard">
+                            <span>Standard</span>
+                        </div>
+                        <div class="part-card" data-exhaust="sport">
+                            <img src="assets/parts/exhaust_sport.png" alt="Sport">
+                            <span>Sport dupla</span>
+                        </div>
+                        <div class="part-card" data-exhaust="racing">
+                            <img src="assets/parts/exhaust_racing.png" alt="Racing">
+                            <span>Racing</span>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Szélvédő matrica -->
-                <div class="option-group">
-                    <h3>🏷️ Matrica csík</h3>
-                    <label class="toggle">
-                        <input type="checkbox" id="stripeToggle">
-                        <span class="slider"></span>
-                        Racing csík
-                    </label>
-                    <input type="color" id="stripeColor" value="#ffffff" title="Csík színe">
+                <!-- Fényszóró -->
+                <div class="option-section">
+                    <h4>💡 Fényszóró típus</h4>
+                    <div class="part-cards">
+                        <div class="part-card active" data-lights="standard">
+                            <img src="assets/parts/lights.png" alt="Standard">
+                            <span>Standard</span>
+                        </div>
+                        <div class="part-card" data-lights="led">
+                            <img src="assets/parts/lights_led.png" alt="LED">
+                            <span>LED</span>
+                        </div>
+                        <div class="part-card" data-lights="xenon">
+                            <img src="assets/parts/lights_xenon.png" alt="Xenon">
+                            <span>Xenon</span>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Reset gomb -->
-                <button id="resetBtn" class="reset-btn">🔄 Visszaállítás</button>
-
-                <!-- Mentés -->
-                <button id="saveBtn" class="save-btn">💾 Kép mentése</button>
+                <!-- Lowering -->
+                <div class="option-section">
+                    <h4>📐 Felfüggesztés magasság</h4>
+                    <div class="slider-row">
+                        <input type="range" id="rideHeight" min="-30" max="20" value="0">
+                        <span id="rideVal">Alap</span>
+                    </div>
+                </div>
             </div>
+
+            <!-- ===== MATRICÁK TAB ===== -->
+            <div class="tab-content" id="tab-stickers">
+                <h3>Matricák & Grafikák</h3>
+
+                <div class="sticker-grid">
+                    <div class="sticker-item" data-sticker="stickerStripe">
+                        <img src="assets/stickers/stripe_racing.png" alt="Racing csík">
+                        <span>Racing csík</span>
+                        <label class="toggle-switch small">
+                            <input type="checkbox" class="sticker-toggle" data-target="stickerStripe">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="sticker-item" data-sticker="stickerFlames">
+                        <img src="assets/stickers/flames.png" alt="Lángok">
+                        <span>Lángok</span>
+                        <label class="toggle-switch small">
+                            <input type="checkbox" class="sticker-toggle" data-target="stickerFlames">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Matrica szín -->
+                <div class="option-section">
+                    <h4>Matrica szín</h4>
+                    <div class="color-presets small">
+                        <div class="preset-color" data-target="sticker" 
+                             data-color="none" style="background:#fff" title="Fehér"></div>
+                        <div class="preset-color" data-target="sticker" 
+                             data-color="brightness(0.1)" style="background:#111" title="Fekete"></div>
+                        <div class="preset-color" data-target="sticker" 
+                             data-color="hue-rotate(330deg) saturate(500%)" style="background:#c00" title="Piros"></div>
+                        <div class="preset-color" data-target="sticker" 
+                             data-color="hue-rotate(220deg) saturate(500%)" style="background:#00c" title="Kék"></div>
+                        <div class="preset-color" data-target="sticker" 
+                             data-color="sepia(100%) saturate(400%) hue-rotate(30deg)" style="background:#b8860b" title="Arany"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reset gomb -->
+            <button class="reset-btn" id="resetBtn">🔄 Visszaállítás</button>
         </div>
     </div>
+</div>
 
-    <script src="trabant.js"></script>
+<!-- html2canvas a képmentéshez -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="tuning.js"></script>
 </body>
 </html>
