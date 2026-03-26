@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trabant Tuning Studio</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🚗 Trabant Tuning Studio</h1>
+
+        <div class="main-layout">
+            <!-- Autó megjelenítő terület -->
+            <div class="car-display">
+                <canvas id="trabantCanvas" width="600" height="400"></canvas>
+            </div>
+
+            <!-- Tuning panel -->
+            <div class="tuning-panel">
+                <h2>⚙️ Tuning Opciók</h2>
+
+                <!-- Szín választó -->
+                <div class="option-group">
+                    <h3>🎨 Karosszéria szín</h3>
+                    <div class="color-options">
+                        <div class="color-btn" style="background:#e74c3c" data-color="#e74c3c" title="Piros"></div>
+                        <div class="color-btn" style="background:#3498db" data-color="#3498db" title="Kék"></div>
+                        <div class="color-btn" style="background:#2ecc71" data-color="#2ecc71" title="Zöld"></div>
+                        <div class="color-btn" style="background:#f1c40f" data-color="#f1c40f" title="Sárga"></div>
+                        <div class="color-btn" style="background:#1a1a1a" data-color="#1a1a1a" title="Fekete"></div>
+                        <div class="color-btn" style="background:#ecf0f1" data-color="#ecf0f1" title="Fehér"></div>
+                        <div class="color-btn" style="background:#e67e22" data-color="#e67e22" title="Narancs"></div>
+                        <div class="color-btn" style="background:#9b59b6" data-color="#9b59b6" title="Lila"></div>
+                        <input type="color" id="customColor" title="Egyéni szín">
+                    </div>
+                </div>
+
+                <!-- Felni választó -->
+                <div class="option-group">
+                    <h3>🔧 Felni stílus</h3>
+                    <select id="wheelStyle">
+                        <option value="standard">Standard</option>
+                        <option value="sport">Sport</option>
+                        <option value="classic">Klasszikus küllős</option>
+                        <option value="chrome">Króm</option>
+                    </select>
+                </div>
+
+                <!-- Felni szín -->
+                <div class="option-group">
+                    <h3>🎨 Felni szín</h3>
+                    <div class="color-options">
+                        <div class="color-btn" style="background:#1a1a1a" data-color="#1a1a1a" data-target="wheel" title="Fekete"></div>
+                        <div class="color-btn" style="background:#c0c0c0" data-color="#c0c0c0" data-target="wheel" title="Ezüst"></div>
+                        <div class="color-btn" style="background:#FFD700" data-color="#FFD700" data-target="wheel" title="Arany"></div>
+                        <div class="color-btn" style="background:#b87333" data-color="#b87333" data-target="wheel" title="Bronz"></div>
+                    </div>
+                </div>
+
+                <!-- Spoiler -->
+                <div class="option-group">
+                    <h3>💨 Spoiler</h3>
+                    <label class="toggle">
+                        <input type="checkbox" id="spoilerToggle">
+                        <span class="slider"></span>
+                        Hátsó spoiler
+                    </label>
+                </div>
+
+                <!-- Ablak tinting -->
+                <div class="option-group">
+                    <h3>🕶️ Ablak sötétítés</h3>
+                    <input type="range" id="windowTint" min="0" max="90" value="0">
+                    <span id="tintValue">0%</span>
+                </div>
+
+                <!-- Kipufogó -->
+                <div class="option-group">
+                    <h3>🔩 Kipufogó</h3>
+                    <select id="exhaustStyle">
+                        <option value="standard">Standard</option>
+                        <option value="sport">Sport dupla</option>
+                        <option value="racing">Racing quad</option>
+                    </select>
+                </div>
+
+                <!-- Szélvédő matrica -->
+                <div class="option-group">
+                    <h3>🏷️ Matrica csík</h3>
+                    <label class="toggle">
+                        <input type="checkbox" id="stripeToggle">
+                        <span class="slider"></span>
+                        Racing csík
+                    </label>
+                    <input type="color" id="stripeColor" value="#ffffff" title="Csík színe">
+                </div>
+
+                <!-- Reset gomb -->
+                <button id="resetBtn" class="reset-btn">🔄 Visszaállítás</button>
+
+                <!-- Mentés -->
+                <button id="saveBtn" class="save-btn">💾 Kép mentése</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="trabant.js"></script>
+</body>
+</html>
